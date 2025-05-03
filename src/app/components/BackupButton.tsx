@@ -7,36 +7,39 @@ export default function BackupButton() {
 
   const handleBackup = async () => {
     setLoading(true);
-  setMessage('');
+    setMessage('');
 
-  try {
-    const res = await fetch('/api/backup', {
-      method: 'POST',
-    });
+    try {
+      const res = await fetch('/api/backup', {
+        method: 'POST',
+      });
 
-    if (!res.ok) {
-      const error = await res.json();
-      setMessage(error.message || 'Error al realizar el backup');
-      return;
+      if (!res.ok) {
+        const error = await res.json();
+        setMessage(error.message || 'Error al realizar el backup');
+        return;
+      }
+
+      const json = await res.json();
+      const formattedJson = JSON.stringify(json, null, 2); // JSON formateado
+
+      const blob = new Blob([formattedJson], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[:.]/g, '-');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup-${timestamp}.json`;
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+      setMessage('Backup descargado correctamente');
+    } catch (error) {
+      setMessage('Error al realizar el backup');
+    } finally {
+      setLoading(false);
     }
-
-    const json = await res.json(); // Obtener el JSON desde la respuesta
-    const formattedJson = JSON.stringify(json, null, 2); // Formatear el JSON con saltos de línea y sangrías
-
-    const blob = new Blob([formattedJson], { type: 'application/json' }); // Crear el Blob con el JSON formateado
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'backup.json';
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    setMessage('Backup descargado correctamente');
-  } catch (error) {
-    setMessage('Error al realizar el backup');
-  } finally {
-    setLoading(false);
-  }
   };
 
   return (
@@ -52,9 +55,8 @@ export default function BackupButton() {
 
       {message && (
         <p
-          className={`text-sm font-medium ${
-            message.includes('Error') ? 'text-red-600' : 'text-green-600'
-          }`}
+          className={`text-sm font-medium ${message.includes('Error') ? 'text-red-600' : 'text-green-600'
+            }`}
         >
           {message}
         </p>
